@@ -264,15 +264,15 @@ func (tserv *TMTServer) generateChild(parent1, parent2 infra.IExtendedAgent) inf
 	var newAgent infra.IExtendedAgent
 	switch {
 	case childAttachmentType == infra.SECURE:
-		newAgent = agents.CreateSecureAgent(tserv, parent1.GetID(), parent2.GetID())
+		newAgent = agents.CreateSecureAgent(tserv)
 	case childAttachmentType == infra.DISMISSIVE:
-		newAgent = agents.CreateDismissiveAgent(tserv, parent1.GetID(), parent2.GetID())
+		newAgent = agents.CreateDismissiveAgent(tserv)
 	case childAttachmentType == infra.PREOCCUPIED:
-		newAgent = agents.CreatePreoccupiedAgent(tserv, parent1.GetID(), parent2.GetID())
+		newAgent = agents.CreatePreoccupiedAgent(tserv)
 	case childAttachmentType == infra.FEARFUL:
-		newAgent = agents.CreateFearfulAgent(tserv, parent1.GetID(), parent2.GetID())
+		newAgent = agents.CreateFearfulAgent(tserv)
 	default:
-		newAgent = agents.CreateFearfulAgent(tserv, parent1.GetID(), parent2.GetID())
+		newAgent = agents.CreateFearfulAgent(tserv)
 	}
 
 	return newAgent

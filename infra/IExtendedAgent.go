@@ -23,7 +23,7 @@ type IExtendedAgent interface {
 	GetTelomere() float64
 	IsAlive() bool
 
-	GetTargetPosition(grid *Grid) (PositionVector, bool)
+	GetTargetPosition() (PositionVector, bool)
 	GetClusterID() int
 	GetASPDecision(grid *Grid) ASPDecison
 	GetPTSParams() PTSParams

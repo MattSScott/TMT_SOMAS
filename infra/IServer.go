@@ -13,4 +13,5 @@ type IServer interface {
 	SubmitDecisionThreshold(uuid.UUID, float64)
 	GetASPThreshold() float32
 	GetInitNumberAgents() int
+	GetGridDims() (int, int)
 }

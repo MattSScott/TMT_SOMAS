@@ -8,8 +8,8 @@ from dash.dependencies import Input, Output, State
 
 # --- Constants ---
 LOG_DIR = "JSONlogs/output.json"
-GRID_WIDTH = 50
-GRID_HEIGHT = 50
+GRID_WIDTH = None
+GRID_HEIGHT = None
 CELL_SIZE = 30
 
 
@@ -21,7 +21,10 @@ turns_per_iteration = {}
 
 with open(LOG_DIR, "r") as file:
     GAME_DATA = json.load(file)
-    turn_number = 0
+    CONFIG = GAME_DATA["Config"]
+    GRID_WIDTH = CONFIG["GridWidth"]
+    GRID_HEIGHT = CONFIG["GridHeight"]
+    assert GRID_WIDTH is not None and GRID_HEIGHT is not None
     for ITER in GAME_DATA["Iterations"]:
         iter_num = ITER["Iteration"]
         TURN_DATA = ITER["Turns"]
@@ -55,14 +58,14 @@ style_map = [
                 style={
                     "width": "15px",
                     "height": "15px",
-                    "background-color": color,
+                    "backgroundColor": color,
                     "display": "inline-block",
-                    "margin-right": "10px",
+                    "marginRight": "10px",
                 }
             ),
             html.H3(label),
         ],
-        style={"margin": "10px", "display": "flex", "align-items": "center"},
+        style={"margin": "10px", "display": "flex", "alignItems": "center"},
     )
     for label, color in color_map.items()
 ]
@@ -80,31 +83,30 @@ app.layout = html.Div(
                     "⬅️ Previous",
                     id="prev-turn",
                     n_clicks=0,
-                    style={"font-size": "20px"},
+                    style={"fontSize": "20px"},
                 ),
                 html.Button(
                     "▶️ Play",
                     id="play-pause",
                     n_clicks=0,
-                    style={"font-size": "20px", "margin": "0 10px"},
+                    style={"fontSize": "20px", "margin": "0 10px"},
                 ),
                 html.Button(
-                    "Next ➡️", id="next-turn", n_clicks=0, style={"font-size": "20px"}
+                    "Next ➡️", id="next-turn", n_clicks=0, style={"fontSize": "20px"}
                 ),
             ],
             style={
                 "display": "flex",
-                "justify-content": "center",
-                "margin-bottom": "10px",
+                "justifyContent": "center",
+                "marginBottom": "10px",
             },
         ),
         html.Div(
             id="iteration-turn-label",
-            style={"textAlign": "center", "font-size": "20px"},
+            style={"textAlign": "center", "fontSize": "20px"},
         ),
         html.Div(
             [
-                # dcc.Graph(figure=style_map),
                 html.Div(style_map, style={"flexDirection": "column"}),
                 dcc.Graph(id="grid-plot"),
                 dcc.Store(id="iteration-store", data=0),
@@ -179,6 +181,8 @@ def update_grid(prev_clicks, next_clicks, n_intervals, current_iteration, curren
     temples = turn_data.get("TempleLocations") or []
 
     fig = go.Figure()
+    fig.data = []
+    fig.layout.annotations = []
 
     fig.update_layout(
         title=f"Iteration {current_iteration} - Turn {current_turn}",
@@ -197,7 +201,7 @@ def update_grid(prev_clicks, next_clicks, n_intervals, current_iteration, curren
             gridcolor="lightgray",
         ),
         height=GRID_HEIGHT * CELL_SIZE,
-        width=GRID_WIDTH * CELL_SIZE,
+        width=GRID_WIDTH * CELL_SIZE * 1.5,
         showlegend=True,
         plot_bgcolor="white",
         autosize=True,
@@ -208,23 +212,23 @@ def update_grid(prev_clicks, next_clicks, n_intervals, current_iteration, curren
         x = agent["Position"]["X"]
         y = agent["Position"]["Y"]
         fig.add_trace(
-            go.Scatter(
+            go.Scattergl(
                 x=[x],
                 y=[y],
                 mode="markers",
-                marker=dict(size=10, color=agent_colors.get(agent_id, "gray")),
+                marker=dict(size=15, color=agent_colors.get(agent_id, "gray")),
                 name=f"Agent {agent_id}",
             )
         )
 
     for t in tombstones:
         fig.add_annotation(
-            x=t["X"], y=t["Y"], text="💀", showarrow=False, font=dict(size=15)
+            x=t["X"], y=t["Y"], text="🪦", showarrow=False, font=dict(size=25)
         )
 
     for t in temples:
         fig.add_annotation(
-            x=t["X"], y=t["Y"], text="🏛️", showarrow=False, font=dict(size=15)
+            x=t["X"], y=t["Y"], text="🏛️", showarrow=False, font=dict(size=25)
         )
 
     return (

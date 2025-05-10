@@ -34,8 +34,3 @@ const (
 	W9  float32 = 0.33
 	W10 float32 = 0.34
 )
-
-const (
-	GRID_WIDTH  int = 50
-	GRID_HEIGHT int = 50
-)

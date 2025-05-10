@@ -20,8 +20,7 @@ type TMTServer struct {
 	*server.BaseServer[infra.IExtendedAgent]
 	config                   config.Config
 	grid                     *infra.Grid
-	clusterMap               map[int][]uuid.UUID                // Map of cluster IDs to agent IDs
-	clusterEliminationData   map[int]*infra.ClusterEliminations // clusterID → ClusterEliminations
+	clusterMap               map[int][]uuid.UUID // Map of cluster IDs to agent IDs
 	lastEliminatedAgents     []infra.IExtendedAgent
 	lastSelfSacrificedAgents []infra.IExtendedAgent
 	numVolunteeredAgents     int
@@ -35,9 +34,8 @@ func CreateTMTServer(config config.Config) *TMTServer {
 	return &TMTServer{
 		BaseServer:               server.CreateBaseServer[infra.IExtendedAgent](config.NumIterations, config.NumTurns, 50*time.Millisecond, 100),
 		config:                   config,
-		grid:                     infra.NewGrid(infra.GRID_WIDTH, infra.GRID_HEIGHT),
+		grid:                     infra.NewGrid(config.GridWidth, config.GridHeight),
 		clusterMap:               make(map[int][]uuid.UUID),
-		clusterEliminationData:   make(map[int]*infra.ClusterEliminations),
 		lastEliminatedAgents:     make([]infra.IExtendedAgent, 0),
 		lastSelfSacrificedAgents: make([]infra.IExtendedAgent, 0),
 		numVolunteeredAgents:     0,
@@ -277,7 +275,7 @@ func (tserv *TMTServer) moveAgents() {
 	for _, agent := range tserv.GetAgentMap() {
 		agentPos := agent.GetPosition()
 		moveX, moveY := tserv.grid.GetValidMove(agentPos.X, agentPos.Y)
-		targetPos, posExists := agent.GetTargetPosition(tserv.grid)
+		targetPos, posExists := agent.GetTargetPosition()
 
 		if posExists {
 			attemptX := agentPos.X - getStep(agentPos.X, targetPos.X)
@@ -317,28 +315,6 @@ func (tserv *TMTServer) applyClustering() {
 	tserv.clusterMap = make(map[int][]uuid.UUID)
 	for _, agent := range tserv.GetAgentMap() {
 		tserv.clusterMap[agent.GetClusterID()] = append(tserv.clusterMap[agent.GetClusterID()], agent.GetID())
-	}
-
-	// Initialize map if not done already
-	if tserv.clusterEliminationData == nil {
-		tserv.clusterEliminationData = make(map[int]*infra.ClusterEliminations)
-	}
-
-	// Record cluster sizes and set cluster history for each agent
-	for clusterID, agents := range tserv.clusterMap {
-		// Initialize if this cluster hasn't been tracked before
-		if _, exists := tserv.clusterEliminationData[clusterID]; !exists {
-			tserv.clusterEliminationData[clusterID] = &infra.ClusterEliminations{}
-		}
-		// Record size of cluster this turn
-		tserv.clusterEliminationData[clusterID].ClusterSizes = append(
-			tserv.clusterEliminationData[clusterID].ClusterSizes,
-			len(agents),
-		)
-
-		if tserv.config.Debug {
-			fmt.Printf("Cluster %d → %d agents\n", clusterID, len(agents))
-		}
 	}
 }
 
@@ -441,10 +417,9 @@ func (tserv *TMTServer) GetInitNumberAgents() int {
 	return tserv.config.NumAgents
 }
 
-// func (tserv *TMTServer) mixWorldviews(wv1, wv2 uint32) uint32 {
-// 	mask := rand.Uint32()
-// 	return (wv1 & mask) | (wv2 &^ mask)
-// }
+func (tserv *TMTServer) GetGridDims() (int, int) {
+	return tserv.config.GridWidth, tserv.config.GridHeight
+}
 
 // ---------------------- Recording Turn Data ----------------------
 

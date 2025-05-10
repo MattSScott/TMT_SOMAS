@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/google/uuid"
-
 	"github.com/MattSScott/TMT_SOMAS/infra"
 )
 
@@ -13,9 +11,9 @@ type FearfulAgent struct {
 	*ExtendedAgent
 }
 
-func CreateFearfulAgent(server infra.IServer, parent1ID uuid.UUID, parent2ID uuid.UUID) *FearfulAgent {
+func CreateFearfulAgent(server infra.IServer) *FearfulAgent {
 	worldview := infra.NewWorldview(byte(0b00))
-	extendedAgent := CreateExtendedAgent(server, parent1ID, parent2ID, worldview)
+	extendedAgent := CreateExtendedAgent(server, worldview)
 
 	// Set Fearful-style attachment: high anxiety, high avoidance
 	extendedAgent.attachment = infra.Attachment{
@@ -41,32 +39,39 @@ func (fa *FearfulAgent) AgentInitialised() {
 }
 
 // Fearful agent movement policy
-// moves towards those not in social network
-func (fa *FearfulAgent) GetTargetPosition(grid *infra.Grid) (infra.PositionVector, bool) {
-	occupied := grid.GetAllOccupiedAgentPositions()
+// TODO: moves away from closest in cluster
+func (fa *FearfulAgent) GetTargetPosition() (infra.PositionVector, bool) {
+	// occupied := grid.GetAllOccupiedAgentPositions()
 
-	var closestStranger infra.IExtendedAgent = nil
+	var closestInCluster infra.IExtendedAgent = nil
 	minDist := math.Inf(1)
 
-	for _, otherAgent := range occupied {
-		if otherAgent.GetID() == fa.GetID() {
-			continue // Skip self
+	for otherID, otherAgent := range fa.GetAgentMap() {
+		// Ignore agents outside of cluster
+		if otherAgent.GetClusterID() != fa.clusterID {
+			continue
 		}
-		if _, known := fa.network[otherAgent.GetID()]; known {
-			continue // Skip friends
+
+		// Ignore self
+		if otherID == fa.GetID() {
+			continue
 		}
 
 		dist := fa.position.Dist(otherAgent.GetPosition())
 		if dist < minDist {
 			minDist = dist
-			closestStranger = otherAgent
+			closestInCluster = otherAgent
 		}
 	}
 
-	if closestStranger == nil {
+	if closestInCluster == nil {
 		return infra.PositionVector{}, false
 	}
 
-	return closestStranger.GetPosition(), true
+	closestPos := closestInCluster.GetPosition()
+	selfPos := fa.GetPosition()
 
+	// closest->self + self == self - closest + self
+
+	return selfPos.Sub(closestPos).Add(selfPos), true
 }

@@ -5,6 +5,8 @@ import (
 )
 
 type Config struct {
+	GridWidth               int     `json:"GridWidth"`
+	GridHeight              int     `json:"GridHeight"`
 	NumAgents               int     `json:"NumAgents"`
 	NumIterations           int     `json:"NumIterations"`
 	NumTurns                int     `json:"NumTurns"`
@@ -28,6 +30,8 @@ type Config struct {
 func NewConfig() Config {
 	cfg := Config{}
 
+	flag.IntVar(&cfg.GridWidth, "width", 50, "Width of Grid World")
+	flag.IntVar(&cfg.GridHeight, "height", 50, "Height of Grid World")
 	flag.IntVar(&cfg.NumAgents, "numAgents", 40, "Initial number of agents")
 	flag.IntVar(&cfg.NumIterations, "iters", 100, "Number of iterations")
 	flag.IntVar(&cfg.NumTurns, "turns", 10, "Initial number of turns")
