@@ -1,4 +1,4 @@
-package gameRecorder
+package infra
 
 import (
 	"encoding/json"
@@ -84,6 +84,56 @@ func UUIDsToStrings(ids []uuid.UUID) []string {
 	result := make([]string, len(ids))
 	for i, id := range ids {
 		result[i] = id.String()
+	}
+	return result
+}
+
+func (gjr *GameJSONRecord) RecordTurn(turn int, agents map[uuid.UUID]IExtendedAgent, grid *Grid, deathReport map[uuid.UUID]DeathInfo, reqElims int, numVols int) {
+	var allAgentRecords []JSONAgentRecord
+	for _, agent := range agents {
+		record := agent.RecordAgentJSON(agent)
+		record.IsAlive = true
+		allAgentRecords = append(allAgentRecords, record)
+	}
+
+	tombstonePositions := make([]Position, len(grid.Tombstones))
+	for i, pos := range grid.Tombstones {
+		tombstonePositions[i] = Position{X: pos.X, Y: pos.Y}
+	}
+
+	templePositions := make([]Position, len(grid.Temples))
+	for i, pos := range grid.Temples {
+		templePositions[i] = Position{X: pos.X, Y: pos.Y}
+	}
+	var eliminated []IExtendedAgent
+	var selfSacrificed []IExtendedAgent
+
+	for _, info := range deathReport {
+		eliminated = append(eliminated, info.Agent)
+		if info.WasVoluntary {
+			selfSacrificed = append(selfSacrificed, info.Agent)
+		} 
+	}	
+
+	log := TurnJSONRecord{
+		Turn:                      turn,
+		Agents:                    allAgentRecords,
+		NumberOfAgents:            len(agents),
+		EliminatedAgents:          agentsToStrings(eliminated),
+		SelfSacrificedAgents:      agentsToStrings(selfSacrificed),
+		TotalVolunteers:           numVols,
+		TotalRequiredEliminations: reqElims,
+		TombstoneLocations:        tombstonePositions,
+		TempleLocations:           templePositions,
+	}
+
+	gjr.Iterations[len(gjr.Iterations)-1].Turns = append(gjr.Iterations[len(gjr.Iterations)-1].Turns, log)
+}
+
+func agentsToStrings(agents []IExtendedAgent) []string {
+	result := make([]string, len(agents))
+	for i, agent := range agents {
+		result[i] = agent.GetID().String()
 	}
 	return result
 }
