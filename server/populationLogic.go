@@ -24,15 +24,15 @@ func (tserv *TMTServer) updateAgentMortality() {
 func (tserv *TMTServer) voluntarilySacrificeAgent(agent infra.IExtendedAgent) {
 	pos := agent.GetPosition()
 	tserv.grid.PlaceTemple(pos.X, pos.Y)
-	tserv.lastEliminatedAgents = append(tserv.lastEliminatedAgents, agent)
-	tserv.lastSelfSacrificedAgents = append(tserv.lastSelfSacrificedAgents, agent)
+	//tserv.lastEliminatedAgents = append(tserv.lastEliminatedAgents, agent)
+	//tserv.lastSelfSacrificedAgents = append(tserv.lastSelfSacrificedAgents, agent)
 	// fmt.Printf("Agent %v has been eliminated (voluntary)\n", agent.GetID())
 }
 
 func (tserv *TMTServer) involuntarilySacrificeAgent(agent infra.IExtendedAgent) {
 	pos := agent.GetPosition()
 	tserv.grid.PlaceTombstone(pos.X, pos.Y)
-	tserv.lastEliminatedAgents = append(tserv.lastEliminatedAgents, agent)
+	//tserv.lastEliminatedAgents = append(tserv.lastEliminatedAgents, agent)
 	// fmt.Printf("Agent %v has been eliminated (non-voluntary)\n", agent.GetID())
 }
 
@@ -167,8 +167,8 @@ func (tserv *TMTServer) applyElimination(deathReport map[uuid.UUID]infra.DeathIn
 }
 
 func (tserv *TMTServer) performSacrifices(deathReport map[uuid.UUID]infra.DeathInfo) {
-	tserv.lastEliminatedAgents = nil
-	tserv.lastSelfSacrificedAgents = nil
+	//tserv.lastEliminatedAgents = nil
+	//tserv.lastSelfSacrificedAgents = nil
 
 	for _, deathInfo := range deathReport {
 		deadAgent := deathInfo.Agent
@@ -180,7 +180,7 @@ func (tserv *TMTServer) performSacrifices(deathReport map[uuid.UUID]infra.DeathI
 	}
 }
 
-func (tserv *TMTServer) generateNewAgents() []infra.IExtendedAgent {
+func (tserv *TMTServer) generateNewAgents(deathReport map[uuid.UUID]infra.DeathInfo) []infra.IExtendedAgent {
 	newAgents := make([]infra.IExtendedAgent, 0)
 
 	dist := distuv.Poisson{
@@ -188,7 +188,11 @@ func (tserv *TMTServer) generateNewAgents() []infra.IExtendedAgent {
 		Src:    rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 
-	parentPool := tserv.lastEliminatedAgents
+	//parentPool := tserv.lastEliminatedAgents
+	parentPool := make([]infra.IExtendedAgent, 0, len(deathReport))
+	for _, info := range deathReport {
+		parentPool = append(parentPool, info.Agent)
+	}
 	poolSize := len(parentPool)
 
 	rand.Shuffle(poolSize, func(i, j int) {

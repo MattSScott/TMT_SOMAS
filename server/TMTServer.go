@@ -21,8 +21,8 @@ type TMTServer struct {
 	config                   config.Config
 	grid                     *infra.Grid
 	clusterMap               map[int][]uuid.UUID // Map of cluster IDs to agent IDs
-	lastEliminatedAgents     []infra.IExtendedAgent
-	lastSelfSacrificedAgents []infra.IExtendedAgent
+	//lastEliminatedAgents     []infra.IExtendedAgent
+	//lastSelfSacrificedAgents []infra.IExtendedAgent
 	numVolunteeredAgents     int
 	expectedChildren         float64
 	agentDecisionThresholds  map[uuid.UUID]float64
@@ -36,8 +36,8 @@ func CreateTMTServer(config config.Config) *TMTServer {
 		config:                   config,
 		grid:                     infra.NewGrid(config.GridWidth, config.GridHeight),
 		clusterMap:               make(map[int][]uuid.UUID),
-		lastEliminatedAgents:     make([]infra.IExtendedAgent, 0),
-		lastSelfSacrificedAgents: make([]infra.IExtendedAgent, 0),
+		//lastEliminatedAgents:     make([]infra.IExtendedAgent, 0),
+		//lastSelfSacrificedAgents: make([]infra.IExtendedAgent, 0),
 		numVolunteeredAgents:     0,
 		expectedChildren:         config.InitialExpectedChildren,
 		agentDecisionThresholds:  make(map[uuid.UUID]float64),
@@ -127,7 +127,10 @@ func (tserv *TMTServer) RunTurn(i, j int) {
 		fmt.Printf("Iteration %d, Turn %d\n", i, j)
 	}
 	tserv.moveAgents()
-	tserv.recordTurnJSON(j)
+	naturalDeathReport := tserv.getNaturalEliminationReport()
+	sacrificialDeathReport := tserv.getSacrificialEliminationReport()
+	fullDeathReport := make(map[uuid.UUID]infra.DeathInfo, len(naturalDeathReport)+len(sacrificialDeathReport))
+	tserv.recordTurnJSON(j, fullDeathReport)
 }
 
 func (tserv *TMTServer) RunEndOfIteration(iter int) {
@@ -177,7 +180,7 @@ func (tserv *TMTServer) RunEndOfIteration(iter int) {
 		agent.IncrementAge()
 	}
 
-	newAgents := tserv.generateNewAgents()
+	newAgents := tserv.generateNewAgents(fullDeathReport)
 	newPop := initialPop + len(newAgents)
 	tserv.updateAgentWorldviews(initialPop, newPop)
 
@@ -423,7 +426,7 @@ func (tserv *TMTServer) GetGridDims() (int, int) {
 
 // ---------------------- Recording Turn Data ----------------------
 
-func (tserv *TMTServer) recordTurnJSON(turn int) {
+func (tserv *TMTServer) recordTurnJSON(turn int, deathReport map[uuid.UUID]infra.DeathInfo) {
 	var allAgentRecords []gameRecorder.JSONAgentRecord
 	for _, agent := range tserv.GetAgentMap() {
 		record := agent.RecordAgentJSON(agent)
@@ -442,16 +445,23 @@ func (tserv *TMTServer) recordTurnJSON(turn int) {
 	}
 
 	totalAgents := float64(len(tserv.GetAgentMap()))
+	var eliminated, selfSacrificed []infra.IExtendedAgent
+	for _, info := range deathReport {
+		eliminated = append(eliminated, info.Agent)
+		if info.WasVoluntary {
+			selfSacrificed = append(selfSacrificed, info.Agent)
+		}
+	}
 	reqElims := int(tserv.config.PopulationRho * totalAgents)
 
 	jsonLog := gameRecorder.TurnJSONRecord{
 		Turn:                      turn,
 		Agents:                    allAgentRecords,
 		NumberOfAgents:            len(tserv.GetAgentMap()),
-		EliminatedAgents:          agentsToStrings(tserv.lastEliminatedAgents),
+		EliminatedAgents:          agentsToStrings(eliminated),
 		TotalRequiredEliminations: reqElims,
 		TotalVolunteers:           tserv.numVolunteeredAgents,
-		SelfSacrificedAgents:      agentsToStrings(tserv.lastSelfSacrificedAgents),
+		SelfSacrificedAgents:      agentsToStrings(selfSacrificed),
 		TombstoneLocations:        tombstonePositions,
 		TempleLocations:           templePositions,
 	}
