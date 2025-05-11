@@ -17,8 +17,9 @@ def classify(value):
 
 log_dir = "JSONlogs/output.json"
 iters = 30
-attach_types = ["Dismissive", "Fearful", "Preoccupied", "Secure"]
+attach_types = ["Dismissive", "Fearful", "Preoccupied", "Secure", "Equal Split"]
 props = np.identity(4)
+props = np.vstack([props, [0.25, 0.25, 0.25, 0.25]])
 data = defaultdict(list)
 
 for row, type in zip(props, attach_types):
@@ -31,7 +32,7 @@ for row, type in zip(props, attach_types):
                 "-numAgents=40",
                 "-iters=200",
                 "-rho=0.3",
-                "-tau=0.4",
+                "-tau=0.35",
                 "-mu=0",
                 f"-dismissive={D}",
                 f"-fearful={F}",
@@ -67,7 +68,7 @@ df = pd.DataFrame(records)
 print(df)
 
 
-fig, axes = plt.subplots(2, 2, figsize=(12, 12))
+fig, axes = plt.subplots(2, 3, figsize=(12, 12))
 axes = axes.flatten()
 
 for idx, agent_type in enumerate(attach_types):
