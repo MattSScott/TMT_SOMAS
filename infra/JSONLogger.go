@@ -1,4 +1,4 @@
-package gameRecorder
+package infra
 
 import (
 	"encoding/json"
@@ -9,26 +9,16 @@ import (
 	"github.com/google/uuid"
 )
 
-type Position struct {
-	X int `json:"X"`
-	Y int `json:"Y"`
-}
-
 type JSONAgentRecord struct {
-	ID                  string   `json:"ID"`
-	IsAlive             bool     `json:"IsAlive"`
-	Age                 int      `json:"Age"`
-	AttachmentStyle     string   `json:"AttachmentStyle"`
-	AttachmentAnxiety   float32  `json:"AttachmentAnxiety"`
-	AttachmentAvoidance float32  `json:"AttachmentAvoidance"`
-	ClusterID           int      `json:"ClusterID"`
-	Position            Position `json:"Position"`
-	Worldview           uint32   `json:"Worldview"`
-	Heroism             int      `json:"Heroism"`
-	//MortalitySalience      float32           `json:"MortalitySalience"`
-	//WorldviewValidation    float32           `json:"WorldviewValidation"`
-	//RelationshipValidation float32           `json:"RelationshipValidation"`
-	//ASPDecison		       string            `json:"ASPDecision"`
+	ID                  string         `json:"ID"`
+	Age                 int            `json:"Age"`
+	AttachmentStyle     string         `json:"AttachmentStyle"`
+	AttachmentAnxiety   float32        `json:"AttachmentAnxiety"`
+	AttachmentAvoidance float32        `json:"AttachmentAvoidance"`
+	ClusterID           int            `json:"ClusterID"`
+	Position            PositionVector `json:"Position"`
+	Worldview           uint32         `json:"Worldview"`
+	Heroism             int            `json:"Heroism"`
 }
 
 type TurnJSONRecord struct {
@@ -38,8 +28,8 @@ type TurnJSONRecord struct {
 	SelfSacrificedAgents      []string          `json:"EliminatedBySelfSacrifice"`
 	TotalVolunteers           int               `json:"NumVolunteers"`
 	TotalRequiredEliminations int               `json:"TotalRequiredEliminations"`
-	TombstoneLocations        []Position        `json:"TombstoneLocations"`
-	TempleLocations           []Position        `json:"TempleLocations"`
+	TombstoneLocations        []PositionVector  `json:"TombstoneLocations"`
+	TempleLocations           []PositionVector  `json:"TempleLocations"`
 }
 
 type IterationJSONRecord struct {

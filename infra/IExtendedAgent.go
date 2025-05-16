@@ -1,7 +1,6 @@
 package infra
 
 import (
-	"github.com/MattSScott/TMT_SOMAS/gameRecorder"
 	"github.com/MattSScott/basePlatformSOMAS/v2/pkg/agent"
 
 	"github.com/google/uuid"
@@ -58,5 +57,5 @@ type IExtendedAgent interface {
 
 	// Data Recording
 	//RecordAgentStatus(instance IExtendedAgent) gameRecorder.AgentRecord
-	RecordAgentJSON(instance IExtendedAgent) gameRecorder.JSONAgentRecord
+	RecordAgentJSON(instance IExtendedAgent) JSONAgentRecord
 }

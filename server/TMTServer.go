@@ -9,7 +9,6 @@ import (
 	"github.com/MattSScott/basePlatformSOMAS/v2/pkg/server"
 
 	"github.com/MattSScott/TMT_SOMAS/config"
-	"github.com/MattSScott/TMT_SOMAS/gameRecorder"
 	"github.com/MattSScott/TMT_SOMAS/infra"
 	"github.com/google/uuid"
 )
@@ -24,8 +23,8 @@ type TMTServer struct {
 	numVolunteeredAgents     int
 	expectedChildren         float64
 	agentDecisionThresholds  map[uuid.UUID]float64
-	gameRecorder             *gameRecorder.GameJSONRecord
-	JSONTurnLogs             []gameRecorder.TurnJSONRecord
+	gameRecorder             *infra.GameJSONRecord
+	JSONTurnLogs             []infra.TurnJSONRecord
 }
 
 func CreateTMTServer(config config.Config) *TMTServer {
@@ -39,8 +38,8 @@ func CreateTMTServer(config config.Config) *TMTServer {
 		numVolunteeredAgents:     0,
 		expectedChildren:         config.InitialExpectedChildren,
 		agentDecisionThresholds:  make(map[uuid.UUID]float64),
-		gameRecorder:             gameRecorder.MakeGameRecord(config),
-		JSONTurnLogs:             make([]gameRecorder.TurnJSONRecord, 0),
+		gameRecorder:             infra.MakeGameRecord(config),
+		JSONTurnLogs:             make([]infra.TurnJSONRecord, 0),
 	}
 }
 
@@ -50,7 +49,7 @@ func (tserv *TMTServer) Start() {
 		tserv.InitialiseRandomNetworkForAgent(ag)
 	}
 	tserv.BaseServer.Start()
-	err := gameRecorder.WriteJSONLog("JSONlogs", tserv.gameRecorder)
+	err := infra.WriteJSONLog("JSONlogs", tserv.gameRecorder)
 	if err != nil {
 		fmt.Println(tserv.config)
 		panic(err)
@@ -424,27 +423,22 @@ func (tserv *TMTServer) GetGridDims() (int, int) {
 // ---------------------- Recording Turn Data ----------------------
 
 func (tserv *TMTServer) recordTurnJSON(turn int) {
-	var allAgentRecords []gameRecorder.JSONAgentRecord
+	var allAgentRecords []infra.JSONAgentRecord
 	for _, agent := range tserv.GetAgentMap() {
 		record := agent.RecordAgentJSON(agent)
-		record.IsAlive = true
 		allAgentRecords = append(allAgentRecords, record)
 	}
 
-	tombstonePositions := make([]gameRecorder.Position, len(tserv.grid.Tombstones))
-	for i, pos := range tserv.grid.Tombstones {
-		tombstonePositions[i] = gameRecorder.Position{X: pos.X, Y: pos.Y}
-	}
+	tombstonePositions := make([]infra.PositionVector, len(tserv.grid.Tombstones))
+	copy(tombstonePositions, tserv.grid.Tombstones)
 
-	templePositions := make([]gameRecorder.Position, len(tserv.grid.Temples))
-	for i, pos := range tserv.grid.Temples {
-		templePositions[i] = gameRecorder.Position{X: pos.X, Y: pos.Y}
-	}
+	templePositions := make([]infra.PositionVector, len(tserv.grid.Temples))
+	copy(templePositions, tserv.grid.Temples)
 
 	totalAgents := float64(len(tserv.GetAgentMap()))
 	reqElims := int(tserv.config.PopulationRho * totalAgents)
 
-	jsonLog := gameRecorder.TurnJSONRecord{
+	jsonLog := infra.TurnJSONRecord{
 		Turn:                      turn,
 		Agents:                    allAgentRecords,
 		EliminatedAgents:          agentsToStrings(tserv.lastEliminatedAgents),
@@ -462,7 +456,7 @@ func (tserv *TMTServer) addIterationJSON(iter int) {
 	writeMap := make(map[uuid.UUID]float64)
 	maps.Copy(writeMap, tserv.agentDecisionThresholds)
 
-	log := gameRecorder.IterationJSONRecord{
+	log := infra.IterationJSONRecord{
 		Iteration:      iter,
 		Turns:          tserv.JSONTurnLogs,
 		Thresholds:     writeMap,

@@ -1,4 +1,4 @@
-package gameRecorder
+package infra
 
 import (
 	"fmt"
