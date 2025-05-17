@@ -35,5 +35,5 @@ func (serv *TMTServer) SeverNetworkConnection(fromAgentID, toAgentID uuid.UUID) 
 }
 
 func (serv *TMTServer) SubmitDecisionThreshold(agentID uuid.UUID, score float64) {
-	serv.agentDecisionThresholds[agentID] = score
+	serv.gameRecorder.WriteDecisionThreshold(agentID, score)
 }
