@@ -16,11 +16,9 @@ with open(log_dir, "r") as file:
     tau = config["ASPThreshold"]
     turn_number = 0
     for ITER in GAME_DATA["Iterations"]:
-        TURN = ITER["Turns"][-1]
-        # for TURN in ITER["Turns"]:
-        acc_elim = len(TURN.get("EliminatedAgents", []))
-        num_vols = TURN["NumVolunteers"]
-        num_req = TURN["TotalRequiredEliminations"]
+        acc_elim = len(ITER.get("EliminatedAgents", []))
+        num_vols = ITER["NumVolunteers"]
+        num_req = ITER["TotalRequiredEliminations"]
         actually_eliminated.append(acc_elim)
         volunteers.append(num_vols)
         required.append(num_req)

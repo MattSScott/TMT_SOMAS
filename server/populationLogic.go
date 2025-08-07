@@ -24,15 +24,12 @@ func (tserv *TMTServer) updateAgentMortality() {
 func (tserv *TMTServer) voluntarilySacrificeAgent(agent infra.IExtendedAgent) {
 	pos := agent.GetPosition()
 	tserv.grid.PlaceTemple(pos.X, pos.Y)
-	tserv.lastEliminatedAgents = append(tserv.lastEliminatedAgents, agent)
-	tserv.lastSelfSacrificedAgents = append(tserv.lastSelfSacrificedAgents, agent)
 	// fmt.Printf("Agent %v has been eliminated (voluntary)\n", agent.GetID())
 }
 
 func (tserv *TMTServer) involuntarilySacrificeAgent(agent infra.IExtendedAgent) {
 	pos := agent.GetPosition()
 	tserv.grid.PlaceTombstone(pos.X, pos.Y)
-	tserv.lastEliminatedAgents = append(tserv.lastEliminatedAgents, agent)
 	// fmt.Printf("Agent %v has been eliminated (non-voluntary)\n", agent.GetID())
 }
 
@@ -66,15 +63,13 @@ func (tserv *TMTServer) stratifyVolunteers() ([]infra.IExtendedAgent, []infra.IE
 	return volunteers, nonVolunteers
 }
 
-func (tserv *TMTServer) getSacrificialEliminationReport() map[uuid.UUID]infra.DeathInfo {
+func (tserv *TMTServer) getSacrificialEliminationReport() (map[uuid.UUID]infra.DeathInfo, int) {
 	volunteers, nonVolunteers := tserv.stratifyVolunteers()
 	sacrificialReport := make(map[uuid.UUID]infra.DeathInfo)
 
 	totalAgents := float64(len(tserv.GetAgentMap()))
 	neededVolunteers := int(tserv.config.PopulationRho * totalAgents)
 	actualVolunteers := len(volunteers)
-	// record number of volunteers
-	tserv.numVolunteeredAgents = actualVolunteers
 
 	// fmt.Println(totalAgents, neededVolunteers, actualVolunteers, tserv.expectedChildren)
 
@@ -107,7 +102,7 @@ func (tserv *TMTServer) getSacrificialEliminationReport() map[uuid.UUID]infra.De
 		}
 	}
 
-	return sacrificialReport
+	return sacrificialReport, actualVolunteers
 }
 
 func (tserv *TMTServer) updateAgentYsterofimia(deathReport map[uuid.UUID]infra.DeathInfo) {
@@ -167,9 +162,6 @@ func (tserv *TMTServer) applyElimination(deathReport map[uuid.UUID]infra.DeathIn
 }
 
 func (tserv *TMTServer) performSacrifices(deathReport map[uuid.UUID]infra.DeathInfo) {
-	tserv.lastEliminatedAgents = nil
-	tserv.lastSelfSacrificedAgents = nil
-
 	for _, deathInfo := range deathReport {
 		deadAgent := deathInfo.Agent
 		if deathInfo.WasVoluntary {
@@ -180,7 +172,7 @@ func (tserv *TMTServer) performSacrifices(deathReport map[uuid.UUID]infra.DeathI
 	}
 }
 
-func (tserv *TMTServer) generateNewAgents() []infra.IExtendedAgent {
+func (tserv *TMTServer) generateNewAgents(deathReport map[uuid.UUID]infra.DeathInfo) []infra.IExtendedAgent {
 	newAgents := make([]infra.IExtendedAgent, 0)
 
 	dist := distuv.Poisson{
@@ -188,7 +180,10 @@ func (tserv *TMTServer) generateNewAgents() []infra.IExtendedAgent {
 		Src:    rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 
-	parentPool := tserv.lastEliminatedAgents
+	parentPool := make([]infra.IExtendedAgent, 0)
+	for _, deathReport := range deathReport {
+		parentPool = append(parentPool, deathReport.Agent)
+	}
 	poolSize := len(parentPool)
 
 	rand.Shuffle(poolSize, func(i, j int) {

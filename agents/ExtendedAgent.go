@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"sort"
 
-	"github.com/MattSScott/TMT_SOMAS/gameRecorder"
 	"github.com/MattSScott/TMT_SOMAS/infra"
 	"github.com/MattSScott/basePlatformSOMAS/v2/pkg/agent"
 	"github.com/google/uuid"
@@ -508,7 +507,7 @@ func (ea *ExtendedAgent) ReceiveSeveredConnected(uuid.UUID) {
 
 // ----------------------- Data Recording Functions -----------------------
 
-func (ea *ExtendedAgent) RecordAgentJSON(instance infra.IExtendedAgent) gameRecorder.JSONAgentRecord {
+func (ea *ExtendedAgent) RecordAgentJSON(instance infra.IExtendedAgent) infra.JSONAgentRecord {
 	styleMap := map[infra.AttachmentType]string{
 		infra.DISMISSIVE:  "Dismissive",
 		infra.FEARFUL:     "Fearful",
@@ -516,20 +515,14 @@ func (ea *ExtendedAgent) RecordAgentJSON(instance infra.IExtendedAgent) gameReco
 		infra.SECURE:      "Secure",
 	}
 
-	return gameRecorder.JSONAgentRecord{
+	return infra.JSONAgentRecord{
 		ID:                  ea.GetID().String(),
-		IsAlive:             ea.IsAlive(),
 		Age:                 ea.GetAge(),
 		AttachmentStyle:     styleMap[ea.attachment.Type],
 		AttachmentAnxiety:   ea.attachment.Anxiety,
 		AttachmentAvoidance: ea.attachment.Avoidance,
 		ClusterID:           ea.clusterID,
-		Position:            gameRecorder.Position{X: ea.position.X, Y: ea.position.Y},
-		// Worldview:           ea.worldview,
-		Heroism: ea.heroism,
-		//MortalitySalience:      ea.MortalitySalience,
-		//WorldviewValidation:    ea.WorldviewValidation,
-		//RelationshipValidation: ea.RelationshipValidation,
-		//ASPDecison: 		    ea.GetASPDecision(nil),
+		Position:            ea.GetPosition(),
+		Heroism:             ea.heroism,
 	}
 }

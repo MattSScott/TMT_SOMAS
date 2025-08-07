@@ -10,8 +10,8 @@ import (
 )
 
 type PositionVector struct {
-	X int
-	Y int
+	X int `json:"X"`
+	Y int `json:"Y"`
 }
 
 type Centroid struct {
