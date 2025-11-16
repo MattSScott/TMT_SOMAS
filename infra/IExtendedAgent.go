@@ -23,9 +23,9 @@ type IExtendedAgent interface {
 	IsAlive() bool
 
 	GetTargetPosition() (PositionVector, bool)
-	GetClusterMeanPosition() PositionVector
-	GetNetworkMeanPosition() PositionVector
-	ClampTargetPosition(PositionVector) PositionVector
+	GetClusterWeightedMeanPosition() PositionVector
+	GetNetworkWeightedMeanPosition() PositionVector
+	NormalizeToUnit(PositionVector) PositionVector
 	GetClusterID() int
 	GetASPDecision(grid *Grid) ASPDecison
 	GetPTSParams() PTSParams

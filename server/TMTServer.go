@@ -262,20 +262,22 @@ func runKMeans(positionMap map[uuid.UUID]infra.PositionVector, numClusters int) 
 func (tserv *TMTServer) moveAgents() {
 	for _, agent := range tserv.GetAgentMap() {
 		agentPos := agent.GetPosition()
-		moveX, moveY := tserv.grid.GetValidMove(agentPos.X, agentPos.Y)
-		targetPos, posExists := agent.GetTargetPosition()
+		moveX, moveY := tserv.grid.GetValidMove(agentPos.X, agentPos.Y) // Gets random valid move, or same position of none exist
+		nextMove := infra.PositionVector{
+			X: moveX,
+			Y: moveY,
+		}
 
+		targetStep, posExists := agent.GetTargetPosition()
 		if posExists {
-			attemptX := agentPos.X + getStep(agentPos.X, targetPos.X)
-			attemptY := agentPos.Y + getStep(agentPos.Y, targetPos.Y)
-			if tserv.moveIsValid(attemptX, attemptY) {
-				moveX, moveY = attemptX, attemptY
+			targetMove := agentPos.Add(targetStep)
+			if tserv.moveIsValid(targetMove.X, targetMove.Y) {
+				nextMove = targetMove
 			}
 		}
 
-		newPos := infra.PositionVector{X: moveX, Y: moveY}
-		tserv.grid.UpdateAgentPosition(agent, newPos)
-		agent.SetPosition(newPos)
+		tserv.grid.UpdateAgentPosition(agent, nextMove)
+		agent.SetPosition(nextMove)
 	}
 }
 

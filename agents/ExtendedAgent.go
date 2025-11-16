@@ -130,89 +130,77 @@ func (ea *ExtendedAgent) SetClusterID(id int) {
 	ea.clusterID = id
 }
 
-func (ea *ExtendedAgent) GetClusterMeanPosition() infra.PositionVector {
-	meanPos := infra.PositionVector{
-		X: 0,
-		Y: 0,
-	}
-	count := 0
+func (ea *ExtendedAgent) GetClusterWeightedMeanPosition() infra.PositionVector {
+	sum := infra.PositionVector{X: 0, Y: 0}
+	weightSum := 0.0
+	selfPos := ea.GetPosition()
 
-	for otherID, otherAgent := range ea.GetAgentMap() {
-		// Ignore self
-		if otherID == ea.GetID() {
+	for _, otherAgent := range ea.GetAgentMap() {
+		if !otherAgent.IsAlive() || otherAgent.GetID() == ea.GetID() {
 			continue
 		}
-
-		// Ignore agents outside of cluster
 		if otherAgent.GetClusterID() != ea.clusterID {
 			continue
 		}
 
-		// ignore dead agents
-		if !otherAgent.IsAlive() {
-			continue
-		}
-
 		otherPos := otherAgent.GetPosition()
-		meanPos = meanPos.Add(otherPos)
-		count++
+		dist := selfPos.Dist(otherPos)
+		weight := 1.0 / (dist + 1) // closer agents have higher influence
+		sum.X += int(float64(otherPos.X) * weight)
+		sum.Y += int(float64(otherPos.Y) * weight)
+		weightSum += weight
 	}
-	if count == 0 {
-		return ea.GetPosition()
+	if weightSum == 0 {
+		return selfPos
 	}
-	meanPos.X /= count
-	meanPos.Y /= count
-
-	return meanPos
+	return infra.PositionVector{X: int(float64(sum.X) / weightSum), Y: int(float64(sum.Y) / weightSum)}
 }
 
-func (ea *ExtendedAgent) GetNetworkMeanPosition() infra.PositionVector {
-	meanPos := infra.PositionVector{
-		X: 0,
-		Y: 0,
-	}
-	count := 0
+func (ea *ExtendedAgent) GetNetworkWeightedMeanPosition() infra.PositionVector {
+	sum := infra.PositionVector{X: 0, Y: 0}
+	weightSum := 0.0
+	selfPos := ea.GetPosition()
+
 	for otherID := range ea.network {
-		// Ignore self
-		if otherID == ea.GetID() {
+		otherAgent, alive := ea.GetAgentByID(otherID)
+		if !alive || otherID == ea.GetID() {
 			continue
 		}
-
-		otherAgent, alive := ea.GetAgentByID(otherID)
-
-		// ignore dead agents
-		if !alive {
+		if otherAgent.GetClusterID() != ea.clusterID {
 			continue
 		}
 
 		otherPos := otherAgent.GetPosition()
-		meanPos = meanPos.Add(otherPos)
-		count++
+		dist := selfPos.Dist(otherPos)
+		weight := 1.0 / (dist + 1) // closer agents have higher influence
+		sum.X += int(float64(otherPos.X) * weight)
+		sum.Y += int(float64(otherPos.Y) * weight)
+		weightSum += weight
 	}
-	if count == 0 {
-		return ea.GetPosition()
-	}
-	meanPos.X /= count
-	meanPos.Y /= count
 
-	return meanPos
+	if weightSum == 0 {
+		return selfPos
+	}
+	return infra.PositionVector{X: int(float64(sum.X) / weightSum), Y: int(float64(sum.Y) / weightSum)}
 }
 
-func (ea *ExtendedAgent) ClampTargetPosition(targetPos infra.PositionVector) infra.PositionVector {
-	gridWidth, gridHeight := ea.IServer.GetGridDims()
+func (ea *ExtendedAgent) NormalizeToUnit(d infra.PositionVector) infra.PositionVector {
+	nx := 0
+	ny := 0
 
-	if targetPos.X < 0 {
-		targetPos.X = 0
-	} else if targetPos.X >= gridWidth {
-		targetPos.X = gridWidth - 1
-	}
-	if targetPos.Y < 0 {
-		targetPos.Y = 0
-	} else if targetPos.Y >= gridHeight {
-		targetPos.Y = gridHeight - 1
+	if d.X > 0 {
+		nx = 1
+	} else if d.X < 0 {
+		nx = -1
 	}
 
-	return targetPos
+	if d.Y > 0 {
+		ny = 1
+	} else if d.Y < 0 {
+		ny = -1
+	}
+
+	return infra.PositionVector{X: nx, Y: ny}
 }
 
 // func (ea *ExtendedAgent) AppendClusterHistory(clusterID int, clusterSize int) {

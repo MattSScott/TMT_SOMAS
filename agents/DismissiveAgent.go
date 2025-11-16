@@ -40,12 +40,9 @@ func (da *DismissiveAgent) AgentInitialised() {
 }
 
 // dismissive agent movement policy
-// TODO: moves away from mean position of social network
+// Objective: moves away from mean position of social network
 func (da *DismissiveAgent) GetTargetPosition() (infra.PositionVector, bool) {
-	networkPos := da.GetNetworkMeanPosition()
-	selfPos := da.GetPosition()
-
-	// network->self + self == self - network + self
-	targetPos := selfPos.Sub(networkPos).Add(selfPos)
-	return da.ClampTargetPosition(targetPos), true
+	meanPos := da.GetNetworkWeightedMeanPosition()
+	targetPos := da.NormalizeToUnit(da.GetPosition().Sub(meanPos))
+	return targetPos, true
 }

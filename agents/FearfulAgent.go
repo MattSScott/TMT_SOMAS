@@ -38,12 +38,9 @@ func (fa *FearfulAgent) AgentInitialised() {
 }
 
 // Fearful agent movement policy
-// TODO: moves away from mean cluster position
+// Objective: moves away from mean cluster position
 func (fa *FearfulAgent) GetTargetPosition() (infra.PositionVector, bool) {
-	clusterPos := fa.GetClusterMeanPosition()
-	selfPos := fa.GetPosition()
-
-	// cluster->self + self == self - cluster + self
-	targetPos := selfPos.Sub(clusterPos).Add(selfPos)
-	return fa.ClampTargetPosition(targetPos), true
+	meanPos := fa.GetClusterWeightedMeanPosition()
+	targetPos := fa.NormalizeToUnit(fa.GetPosition().Sub(meanPos))
+	return targetPos, true
 }
