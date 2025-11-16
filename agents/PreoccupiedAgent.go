@@ -2,7 +2,6 @@ package agents
 
 import (
 	"fmt"
-	"math"
 
 	"github.com/MattSScott/TMT_SOMAS/infra"
 )
@@ -40,34 +39,7 @@ func (pa *PreoccupiedAgent) AgentInitialised() {
 }
 
 // preoccupied agent movement policy
-// TODO: moves towards closest in cluster
+// TODO: moves towards mean cluster position
 func (pa *PreoccupiedAgent) GetTargetPosition() (infra.PositionVector, bool) {
-	// occupied := grid.GetAllOccupiedAgentPositions()
-
-	var closestInCluster infra.IExtendedAgent = nil
-	minDist := math.Inf(1)
-
-	for otherID, otherAgent := range pa.GetAgentMap() {
-		// Ignore agents outside of cluster
-		if otherAgent.GetClusterID() != pa.clusterID {
-			continue
-		}
-
-		// Ignore self
-		if otherID == pa.GetID() {
-			continue
-		}
-
-		dist := pa.position.Dist(otherAgent.GetPosition())
-		if dist < minDist {
-			minDist = dist
-			closestInCluster = otherAgent
-		}
-	}
-
-	if closestInCluster == nil {
-		return infra.PositionVector{}, false
-	}
-
-	return closestInCluster.GetPosition(), true
+	return pa.GetClusterMeanPosition(), true
 }

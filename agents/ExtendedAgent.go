@@ -130,6 +130,91 @@ func (ea *ExtendedAgent) SetClusterID(id int) {
 	ea.clusterID = id
 }
 
+func (ea *ExtendedAgent) GetClusterMeanPosition() infra.PositionVector {
+	meanPos := infra.PositionVector{
+		X: 0,
+		Y: 0,
+	}
+	count := 0
+
+	for otherID, otherAgent := range ea.GetAgentMap() {
+		// Ignore self
+		if otherID == ea.GetID() {
+			continue
+		}
+
+		// Ignore agents outside of cluster
+		if otherAgent.GetClusterID() != ea.clusterID {
+			continue
+		}
+
+		// ignore dead agents
+		if !otherAgent.IsAlive() {
+			continue
+		}
+
+		otherPos := otherAgent.GetPosition()
+		meanPos = meanPos.Add(otherPos)
+		count++
+	}
+	if count == 0 {
+		return ea.GetPosition()
+	}
+	meanPos.X /= count
+	meanPos.Y /= count
+
+	return meanPos
+}
+
+func (ea *ExtendedAgent) GetNetworkMeanPosition() infra.PositionVector {
+	meanPos := infra.PositionVector{
+		X: 0,
+		Y: 0,
+	}
+	count := 0
+	for otherID := range ea.network {
+		// Ignore self
+		if otherID == ea.GetID() {
+			continue
+		}
+
+		otherAgent, alive := ea.GetAgentByID(otherID)
+
+		// ignore dead agents
+		if !alive {
+			continue
+		}
+
+		otherPos := otherAgent.GetPosition()
+		meanPos = meanPos.Add(otherPos)
+		count++
+	}
+	if count == 0 {
+		return ea.GetPosition()
+	}
+	meanPos.X /= count
+	meanPos.Y /= count
+
+	return meanPos
+}
+
+func (ea *ExtendedAgent) ClampTargetPosition(targetPos infra.PositionVector) infra.PositionVector {
+	gridWidth, gridHeight := ea.IServer.GetGridDims()
+
+	if targetPos.X < 0 {
+		targetPos.X = 0
+	} else if targetPos.X >= gridWidth {
+		targetPos.X = gridWidth - 1
+	}
+	if targetPos.Y < 0 {
+		targetPos.Y = 0
+	} else if targetPos.Y >= gridHeight {
+		targetPos.Y = gridHeight - 1
+	}
+
+	return targetPos
+}
+
 // func (ea *ExtendedAgent) AppendClusterHistory(clusterID int, clusterSize int) {
 // 	//ea.ClusterHistory = append(ea.ClusterHistory, clusterID)
 // 	ea.clusterSizeHistory = append(ea.clusterSizeHistory, clusterSize)
