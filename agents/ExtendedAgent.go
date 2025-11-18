@@ -130,12 +130,12 @@ func (ea *ExtendedAgent) SetClusterID(id int) {
 	ea.clusterID = id
 }
 
-func (ea *ExtendedAgent) GetClusterWeightedMeanPosition() infra.PositionVector {
+func (ea *ExtendedAgent) WeightedMeanPosition(agentMap map[uuid.UUID]infra.IExtendedAgent) infra.PositionVector {
 	sum := infra.PositionVector{X: 0, Y: 0}
 	weightSum := 0.0
 	selfPos := ea.GetPosition()
 
-	for _, otherAgent := range ea.GetAgentMap() {
+	for _, otherAgent := range agentMap {
 		if !otherAgent.IsAlive() || otherAgent.GetID() == ea.GetID() {
 			continue
 		}
@@ -156,32 +156,17 @@ func (ea *ExtendedAgent) GetClusterWeightedMeanPosition() infra.PositionVector {
 	return infra.PositionVector{X: int(float64(sum.X) / weightSum), Y: int(float64(sum.Y) / weightSum)}
 }
 
+func (ea *ExtendedAgent) GetClusterWeightedMeanPosition() infra.PositionVector {
+	return ea.WeightedMeanPosition(ea.GetAgentMap())
+}
+
 func (ea *ExtendedAgent) GetNetworkWeightedMeanPosition() infra.PositionVector {
-	sum := infra.PositionVector{X: 0, Y: 0}
-	weightSum := 0.0
-	selfPos := ea.GetPosition()
-
+	agentMap := map[uuid.UUID]infra.IExtendedAgent{}
 	for otherID := range ea.network {
-		otherAgent, alive := ea.GetAgentByID(otherID)
-		if !alive || otherID == ea.GetID() {
-			continue
-		}
-		if otherAgent.GetClusterID() != ea.clusterID {
-			continue
-		}
-
-		otherPos := otherAgent.GetPosition()
-		dist := selfPos.Dist(otherPos)
-		weight := 1.0 / (dist + 1) // closer agents have higher influence
-		sum.X += int(float64(otherPos.X) * weight)
-		sum.Y += int(float64(otherPos.Y) * weight)
-		weightSum += weight
+		otherAgent, _ := ea.GetAgentByID(otherID)
+		agentMap[otherID] = otherAgent
 	}
-
-	if weightSum == 0 {
-		return selfPos
-	}
-	return infra.PositionVector{X: int(float64(sum.X) / weightSum), Y: int(float64(sum.Y) / weightSum)}
+	return ea.WeightedMeanPosition(agentMap)
 }
 
 func (ea *ExtendedAgent) NormalizeToUnit(d infra.PositionVector) infra.PositionVector {
