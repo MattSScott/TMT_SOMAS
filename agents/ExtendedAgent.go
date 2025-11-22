@@ -130,6 +130,46 @@ func (ea *ExtendedAgent) SetClusterID(id int) {
 	ea.clusterID = id
 }
 
+func (ea *ExtendedAgent) WeightedMeanPosition(agentMap map[uuid.UUID]infra.IExtendedAgent) (infra.PositionVector, bool) {
+	var sumX, sumY, weightSum float64
+	selfPos := ea.GetPosition()
+
+	for _, otherAgent := range agentMap {
+		if !otherAgent.IsAlive() ||
+			otherAgent.GetID() == ea.GetID() ||
+			otherAgent.GetClusterID() != ea.clusterID {
+			continue
+		}
+
+		otherPos := otherAgent.GetPosition()
+		dist := selfPos.Dist(otherPos)
+		weight := 1.0 / (dist + 1.0) // closer agents have higher influence
+		sumX += float64(otherPos.X) * weight
+		sumY += float64(otherPos.Y) * weight
+		weightSum += weight
+	}
+	if weightSum == 0.0 {
+		return selfPos, false
+	}
+	return infra.PositionVector{
+		X: int(sumX / weightSum),
+		Y: int(sumY / weightSum),
+	}, true
+}
+
+func (ea *ExtendedAgent) GetClusterWeightedMeanPosition() (infra.PositionVector, bool) {
+	return ea.WeightedMeanPosition(ea.GetAgentMap())
+}
+
+func (ea *ExtendedAgent) GetNetworkWeightedMeanPosition() (infra.PositionVector, bool) {
+	agentMap := map[uuid.UUID]infra.IExtendedAgent{}
+	for otherID := range ea.network {
+		otherAgent, _ := ea.GetAgentByID(otherID)
+		agentMap[otherID] = otherAgent
+	}
+	return ea.WeightedMeanPosition(agentMap)
+}
+
 // func (ea *ExtendedAgent) AppendClusterHistory(clusterID int, clusterSize int) {
 // 	//ea.ClusterHistory = append(ea.ClusterHistory, clusterID)
 // 	ea.clusterSizeHistory = append(ea.clusterSizeHistory, clusterSize)

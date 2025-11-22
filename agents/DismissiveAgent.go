@@ -2,7 +2,6 @@ package agents
 
 import (
 	"fmt"
-	"math"
 
 	"github.com/MattSScott/TMT_SOMAS/infra"
 )
@@ -41,38 +40,10 @@ func (da *DismissiveAgent) AgentInitialised() {
 }
 
 // dismissive agent movement policy
-// TODO: moves away from closest in social network
+// Objective: moves away from weighted mean position of social network
 func (da *DismissiveAgent) GetTargetPosition() (infra.PositionVector, bool) {
-	var closestInNetwork infra.IExtendedAgent = nil
-	minDist := math.Inf(1)
-
-	for otherID := range da.network {
-		// Ignore self
-		if otherID == da.GetID() {
-			continue
-		}
-
-		otherAgent, alive := da.GetAgentByID(otherID)
-
-		// ignore dead agents
-		if !alive {
-			continue
-		}
-
-		dist := da.position.Dist(otherAgent.GetPosition())
-		if dist < minDist {
-			minDist = dist
-			closestInNetwork = otherAgent
-		}
-	}
-
-	if closestInNetwork == nil {
-		return infra.PositionVector{}, false
-	}
-
-	closestPos := closestInNetwork.GetPosition()
+	meanPos, valid := da.GetNetworkWeightedMeanPosition()
 	selfPos := da.GetPosition()
-
-	// closest->self + self == self - closest + self
-	return selfPos.Sub(closestPos).Add(selfPos), true
+	// target = self + (self - mean)
+	return selfPos.Add(selfPos.Sub(meanPos)), valid
 }

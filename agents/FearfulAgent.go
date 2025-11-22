@@ -2,7 +2,6 @@ package agents
 
 import (
 	"fmt"
-	"math"
 
 	"github.com/MattSScott/TMT_SOMAS/infra"
 )
@@ -39,39 +38,10 @@ func (fa *FearfulAgent) AgentInitialised() {
 }
 
 // Fearful agent movement policy
-// TODO: moves away from closest in cluster
+// Objective: moves away from weighted mean cluster position
 func (fa *FearfulAgent) GetTargetPosition() (infra.PositionVector, bool) {
-	// occupied := grid.GetAllOccupiedAgentPositions()
-
-	var closestInCluster infra.IExtendedAgent = nil
-	minDist := math.Inf(1)
-
-	for otherID, otherAgent := range fa.GetAgentMap() {
-		// Ignore agents outside of cluster
-		if otherAgent.GetClusterID() != fa.clusterID {
-			continue
-		}
-
-		// Ignore self
-		if otherID == fa.GetID() {
-			continue
-		}
-
-		dist := fa.position.Dist(otherAgent.GetPosition())
-		if dist < minDist {
-			minDist = dist
-			closestInCluster = otherAgent
-		}
-	}
-
-	if closestInCluster == nil {
-		return infra.PositionVector{}, false
-	}
-
-	closestPos := closestInCluster.GetPosition()
+	meanPos, valid := fa.GetClusterWeightedMeanPosition()
 	selfPos := fa.GetPosition()
-
-	// closest->self + self == self - closest + self
-
-	return selfPos.Sub(closestPos).Add(selfPos), true
+	// target = self + (self - mean)
+	return selfPos.Add(selfPos.Sub(meanPos)), valid
 }
