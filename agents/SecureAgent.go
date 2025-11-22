@@ -39,9 +39,7 @@ func (sa *SecureAgent) AgentInitialised() {
 }
 
 // Secure agent movement policy
-// Objective: moves towards mean position of social network
+// Objective: moves towards weighted mean position of social network
 func (sa *SecureAgent) GetTargetPosition() (infra.PositionVector, bool) {
-	meanPos := sa.GetNetworkWeightedMeanPosition()
-	targetPos := sa.NormalizeToUnit(meanPos.Sub(sa.GetPosition()))
-	return targetPos, true
+	return sa.GetNetworkWeightedMeanPosition()
 }

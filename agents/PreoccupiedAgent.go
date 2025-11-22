@@ -39,9 +39,7 @@ func (pa *PreoccupiedAgent) AgentInitialised() {
 }
 
 // preoccupied agent movement policy
-// Objective: moves towards mean cluster position
+// Objective: moves towards weighted mean cluster position
 func (pa *PreoccupiedAgent) GetTargetPosition() (infra.PositionVector, bool) {
-	meanPos := pa.GetClusterWeightedMeanPosition()
-	targetPos := pa.NormalizeToUnit(meanPos.Sub(pa.GetPosition()))
-	return targetPos, true
+	return pa.GetClusterWeightedMeanPosition()
 }

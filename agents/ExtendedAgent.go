@@ -130,62 +130,44 @@ func (ea *ExtendedAgent) SetClusterID(id int) {
 	ea.clusterID = id
 }
 
-func (ea *ExtendedAgent) WeightedMeanPosition(agentMap map[uuid.UUID]infra.IExtendedAgent) infra.PositionVector {
-	sum := infra.PositionVector{X: 0, Y: 0}
-	weightSum := 0.0
+func (ea *ExtendedAgent) WeightedMeanPosition(agentMap map[uuid.UUID]infra.IExtendedAgent) (infra.PositionVector, bool) {
+	var sumX, sumY, weightSum float64
 	selfPos := ea.GetPosition()
 
 	for _, otherAgent := range agentMap {
-		if !otherAgent.IsAlive() || otherAgent.GetID() == ea.GetID() {
-			continue
-		}
-		if otherAgent.GetClusterID() != ea.clusterID {
+		if !otherAgent.IsAlive() ||
+			otherAgent.GetID() == ea.GetID() ||
+			otherAgent.GetClusterID() != ea.clusterID {
 			continue
 		}
 
 		otherPos := otherAgent.GetPosition()
 		dist := selfPos.Dist(otherPos)
-		weight := 1.0 / (dist + 1) // closer agents have higher influence
-		sum.X += int(float64(otherPos.X) * weight)
-		sum.Y += int(float64(otherPos.Y) * weight)
+		weight := 1.0 / (dist + 1.0) // closer agents have higher influence
+		sumX += float64(otherPos.X) * weight
+		sumY += float64(otherPos.Y) * weight
 		weightSum += weight
 	}
-	if weightSum == 0 {
-		return selfPos
+	if weightSum == 0.0 {
+		return selfPos, false
 	}
-	return infra.PositionVector{X: int(float64(sum.X) / weightSum), Y: int(float64(sum.Y) / weightSum)}
+	return infra.PositionVector{
+		X: int(sumX / weightSum),
+		Y: int(sumY / weightSum),
+	}, true
 }
 
-func (ea *ExtendedAgent) GetClusterWeightedMeanPosition() infra.PositionVector {
+func (ea *ExtendedAgent) GetClusterWeightedMeanPosition() (infra.PositionVector, bool) {
 	return ea.WeightedMeanPosition(ea.GetAgentMap())
 }
 
-func (ea *ExtendedAgent) GetNetworkWeightedMeanPosition() infra.PositionVector {
+func (ea *ExtendedAgent) GetNetworkWeightedMeanPosition() (infra.PositionVector, bool) {
 	agentMap := map[uuid.UUID]infra.IExtendedAgent{}
 	for otherID := range ea.network {
 		otherAgent, _ := ea.GetAgentByID(otherID)
 		agentMap[otherID] = otherAgent
 	}
 	return ea.WeightedMeanPosition(agentMap)
-}
-
-func (ea *ExtendedAgent) NormalizeToUnit(d infra.PositionVector) infra.PositionVector {
-	nx := 0
-	ny := 0
-
-	if d.X > 0 {
-		nx = 1
-	} else if d.X < 0 {
-		nx = -1
-	}
-
-	if d.Y > 0 {
-		ny = 1
-	} else if d.Y < 0 {
-		ny = -1
-	}
-
-	return infra.PositionVector{X: nx, Y: ny}
 }
 
 // func (ea *ExtendedAgent) AppendClusterHistory(clusterID int, clusterSize int) {
